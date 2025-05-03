@@ -32,8 +32,6 @@ try:
         print(event)
         producer.send(topic = 'raw_alerts', value = event)
 
-        producer.flush()
-
         time.sleep(10)
 
 except Exception as e:
