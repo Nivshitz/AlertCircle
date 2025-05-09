@@ -47,6 +47,3 @@ def update_user_locations():
     deleted = collection.delete_many({"insert_time": {"$lt": cutoff_time}}).deleted_count
 
     print(f"Updated {len(users)} users, deleted {deleted} old records(>5min old).")
-
-if __name__ == "__main__":
-    update_user_locations()
