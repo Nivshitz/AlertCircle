@@ -3,3 +3,4 @@ pyspark.sql
 pymongo
 apache-airflow
 apache-sedona
+pandas
