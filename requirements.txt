@@ -1,4 +1,4 @@
 kafka
 pyspark.sql
 pymongo
-airflow
+apache-airflow
