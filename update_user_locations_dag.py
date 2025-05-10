@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
+from airflow.providers.ssh.operators.ssh import SSHOperator
 from datetime import datetime, timedelta
 
 default_args = {
@@ -9,14 +9,16 @@ default_args = {
 }
 
 with DAG(
-    dag_id='update_user_locations_dag',
+    dag_id='update_user_locations_ssh_dag',
     default_args=default_args,
-    description='Update MongoDB using BashOperator',
+    description='Update MongoDB using SSHOperator',
     schedule_interval='*/1 * * * *',
     start_date=datetime(2025, 5, 9),
-    catchup=False
+    catchup=False,
+    max_active_runs=1
 ) as dag:
-    update_task = BashOperator(
+    update_task = SSHOperator(
         task_id='update_user_locations',
-        bash_command='docker exec dev_env python3 /home/developer/AlertCircle/update_user_locations.py',
+        ssh_conn_id='dev_env_ssh',
+        command='python3 /home/developer/airflow/update_user_locations.py',
     )
