@@ -1,5 +1,5 @@
-kafka
-pyspark.sql
+kafka-python
+pyspark
 pymongo
 apache-airflow
 apache-sedona
