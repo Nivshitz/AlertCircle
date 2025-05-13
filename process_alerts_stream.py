@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StringType, DoubleType, TimestampType
-from pyspark.sql.functions import col, expr, to_json, struct
+from pyspark.sql.functions import col, expr, to_json, struct, broadcast
 from sedona.register import SedonaRegistrator
 from sedona.sql.functions import ST_Point, ST_DistanceSphere
 
@@ -55,15 +55,13 @@ def process_batch(batch_df, batch_id):
         .load() \
         .withColumnRenamed("user_id", "nearby_user_id") \
         .withColumn("user_point", ST_Point(col("location.coordinates")[0], col("location.coordinates")[1]))
-    
-    # think about users_df.cache() - try later
 
     if users_df.rdd.isEmpty():
         print("No active users.")
         return
 
-    # Distance filter: only users within 500 meters are considered
-    enriched_df = batch_df.crossJoin(users_df) \
+    # Distance filter: only users within 500 meters are considered. Using broadcast join for performance
+    enriched_df = batch_df.crossJoin(broadcast(users_df)) \
         .withColumn("distance_meters", ST_DistanceSphere(batch_df.alert_point, users_df.user_point)) \
         .filter("distance_meters <= 500")
 
@@ -77,7 +75,7 @@ def process_batch(batch_df, batch_id):
         .option("topic", enriched_topic) \
         .save()
 
-# Launch streaming with foreachBatch
+# Launch streaming with foreachBatch: process each micro-batch of alerts and write to enriched_alerts topic
 query = alerts_df.writeStream \
     .foreachBatch(process_batch) \
     .outputMode("append") \
