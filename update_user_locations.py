@@ -5,7 +5,7 @@ import random
 
 def update_user_locations():
     # MongoDB setup
-    client = MongoClient("mongodb://mongo:27017/")
+    client = MongoClient("mongodb://3.68.79.117:27017/") # For local: "mongodb://mongo:27017/"
     db = client["AlertCircleProject"]
     collection = db["latest_user_location"]
 
