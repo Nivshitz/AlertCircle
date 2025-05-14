@@ -56,3 +56,6 @@ def update_user_locations():
         print(f"❌ MongoDB error: {e}")
     except Exception as e:
         print(f"❌ General error: {e}")
+
+if __name__ == "__main__":
+    update_user_locations()
