@@ -3,14 +3,20 @@ from pymongo.errors import PyMongoError
 from datetime import datetime, timedelta, timezone
 import requests
 import random
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+EC2_EXTERNAL_IP = os.getenv("EC2_EXTERNAL_IP")
 
 def update_user_locations():
     try:
         print("🔄 Starting user location update process...")
 
         # MongoDB setup - EC2 private IP
-        print("🔗 Connecting to MongoDB at 172.31.44.221...")
-        client = MongoClient("mongodb://172.31.44.221:27017/")  # For local: "mongodb://mongo:27017/"
+        print(f"🔗 Connecting to MongoDB at {EC2_EXTERNAL_IP}...")
+        client = MongoClient(f"mongodb://{EC2_EXTERNAL_IP}:27017/")  # For local: "mongodb://mongo:27017/"
         db = client["AlertCircleProject"]
         collection = db["latest_user_location"]
 

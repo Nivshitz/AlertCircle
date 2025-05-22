@@ -1,6 +1,6 @@
 import random
-import time
 import json
+from datetime import datetime, timezone
 import uuid
 from kafka import KafkaProducer
 
@@ -12,7 +12,7 @@ report_options = ['inspector_dog', 'inspector_parking']
 def generate_event(report_options):
     return {
         "event_id": str(uuid.uuid4()),
-        "event_time": time.time(),
+        "event_time": datetime.now(timezone.utc).isoformat(),
         "event_type": random.choice(report_options),
         "user_id": f"user_{random.randint(1000, 9999)}",
         "description": "Saw an insepctor giving reports to dog owners", # Event description provided by the user (optionally)
