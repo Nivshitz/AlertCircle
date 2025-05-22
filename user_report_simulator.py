@@ -2,6 +2,7 @@ import random
 import json
 from datetime import datetime, timezone
 import uuid
+import time
 from kafka import KafkaProducer
 
 producer = KafkaProducer(bootstrap_servers = 'course-kafka:9092',
