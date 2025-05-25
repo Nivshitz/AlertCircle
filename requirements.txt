@@ -1,6 +1,6 @@
-kafka-python
-pyspark
-pymongo
-apache-airflow
-apache-sedona
-pandas
+kafka-python==2.0.2
+pyspark==3.4.1
+pymongo==4.6.1
+apache-airflow==2.7.3
+pandas==2.2.2
+dotenv
