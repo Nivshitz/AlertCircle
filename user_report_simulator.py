@@ -19,7 +19,6 @@ def generate_event(report_options):
         "description": "Saw an insepctor giving reports to dog owners", # Event description provided by the user (optionally)
         "latitude": round(random.uniform(-90.0, 90.0), 6),
         "longitude": round(random.uniform(-180.0, 180.0), 6),
-        #"accuracy": round(random.uniform(3.0, 50.0), 1)  # meters
         "device_id": f"device_{random.randint(1000, 9999)}"
     }
 

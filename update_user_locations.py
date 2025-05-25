@@ -22,9 +22,9 @@ def update_user_locations():
 
         # Simulated data for demonstration
         users = [
-            {"user_id": "alice123", "latitude": random.randrange(-90,90), "longitude": random.randrange(-180,180)},
-            {"user_id": "bob456", "latitude": random.randrange(-90,90), "longitude": random.randrange(-180,180)},
-            {"user_id": "charlie789", "latitude": random.randrange(-90,90), "longitude": random.randrange(-180,180)}
+            {"user_id": "alice123", "latitude": round(random.uniform(-90, 90.0), 6), "longitude": round(random.uniform(-180.0, 180.0), 6)},
+            {"user_id": "bob456", "latitude": round(random.uniform(-90.0, 90.0), 6), "longitude": round(random.uniform(-180.0, 180.0), 6)},
+            {"user_id": "charlie789", "latitude": round(random.uniform(-90.0, 90.0), 6), "longitude": round(random.uniform(-180.0, 180.0), 6)}
         ]
 
         print(f"📦 Preparing updates for {len(users)} users...")
