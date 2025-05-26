@@ -4,3 +4,8 @@ pymongo==4.6.1
 apache-airflow==2.7.3
 pandas==2.2.2
 dotenv
+apache-sedona
+streamlit==1.35.0
+streamlit-folium==0.14.0
+pymongo==4.6.1
+folium==0.16.0
