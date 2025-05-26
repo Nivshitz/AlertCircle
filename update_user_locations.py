@@ -1,37 +1,43 @@
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import PyMongoError
 from datetime import datetime, timedelta, timezone
-import requests
 import random
-import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-EC2_EXTERNAL_IP = os.getenv("EC2_EXTERNAL_IP")
+# Known users – match with producer
+known_users = [
+    "niv123", "charlie789", "tamar456", "shira321", "amir888",
+    "lior111", "gal654", "eden990", "yossi555"
+]
+
+# Location bounds: Tel Aviv – Ramat Gan – Givatayim
+lat_range = (32.04, 32.10)
+lon_range = (34.78, 34.83)
 
 def update_user_locations():
     try:
-        print("🔄 Starting user location update process...")
+        print("Starting user location update process...")
 
-        # MongoDB setup - EC2 private IP
-        print(f"🔗 Connecting to MongoDB at {EC2_EXTERNAL_IP}...")
-        client = MongoClient(f"mongodb://{EC2_EXTERNAL_IP}:27017/")  # For local: "mongodb://mongo:27017/"
+        client = MongoClient("mongodb://mongo:27017/")
         db = client["AlertCircleProject"]
         collection = db["latest_user_location"]
 
-        # Simulated data for demonstration
-        users = [
-            {"user_id": "alice123", "latitude": round(random.uniform(-90, 90.0), 6), "longitude": round(random.uniform(-180.0, 180.0), 6)},
-            {"user_id": "bob456", "latitude": round(random.uniform(-90.0, 90.0), 6), "longitude": round(random.uniform(-180.0, 180.0), 6)},
-            {"user_id": "charlie789", "latitude": round(random.uniform(-90.0, 90.0), 6), "longitude": round(random.uniform(-180.0, 180.0), 6)}
-        ]
+        now = datetime.now(timezone.utc).isoformat()
 
-        print(f"📦 Preparing updates for {len(users)} users...")
+        users = []
+        for user in known_users:
+            if user == "niv123": # Demo user - fixed location (BITSARON)
+                users.append({
+                    "user_id": user,
+                    "latitude": 32.069,
+                    "longitude": 34.794
+                })
+            else:
+                users.append({
+                    "user_id": user,
+                    "latitude": round(random.uniform(*lat_range), 6),
+                    "longitude": round(random.uniform(*lon_range), 6)
+                })
 
-        now = datetime.now(timezone.utc)
-
-        # Prepare bulk operations
         operations = [
             UpdateOne(
                 {"user_id": user["user_id"]},
@@ -50,18 +56,12 @@ def update_user_locations():
 
         if operations:
             result = collection.bulk_write(operations)
-            print(f"✅ Bulk write complete. Upserts: {result.upserted_count}, Modified: {result.modified_count}")
-
-        # Delete outdated records
-        cutoff_time = now - timedelta(minutes=5)
-        deleted = collection.delete_many({"insert_time": {"$lt": cutoff_time}}).deleted_count
-
-        print(f"🧹 Deleted {deleted} outdated records (>5min old).")
+            print(f"Updated {len(users)} users - Upserts: {result.upserted_count}, Modified: {result.modified_count}")
 
     except PyMongoError as e:
-        print(f"❌ MongoDB error: {e}")
+        print(f"MongoDB error: {e}")
     except Exception as e:
-        print(f"❌ General error: {e}")
+        print(f"General error: {e}")
 
 if __name__ == "__main__":
     update_user_locations()

@@ -52,6 +52,19 @@ def generate_event():
         "longitude": round(random.uniform(*lon_range), 6)
     }
 
+# Send demo alert
+demo_alert = {
+    "event_id": "demo001",
+    "event_time": datetime.now(timezone.utc).isoformat(),
+    "event_type": "bylaw_dog_inspector",
+    "user_id": "lior111",
+    "description": "Inspector giving a ticket by the playground",
+    "latitude": 32.069,
+    "longitude": 34.794
+}
+producer.send(RAW_TOPIC, value=json.dumps(demo_alert).encode("utf-8"))
+print("Demo alert sent.")
+
 # Producer loop
 try:
     while True:
