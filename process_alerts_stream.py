@@ -6,13 +6,19 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 import os
 
-# === Load environment variables from .env ===
+# Load environment variables
 load_dotenv()
 EC2_EXTERNAL_IP = os.getenv("EC2_EXTERNAL_IP")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-# === Initialize SparkSession ===
+# Config
+KAFKA_BOOTSTRAP_SERVERS = f"{EC2_EXTERNAL_IP}:9092"
+RAW_TOPIC = "raw_alerts"
+ENRICHED_TOPIC = "enriched_alerts"
+CHECKPOINT_DIR = "./checkpoints/alerts_stream_v4"
+
+# Initialize SparkSession
 spark = SparkSession.builder \
     .appName("ProcessAlertsStream") \
     .master("local[*]") \
@@ -39,13 +45,7 @@ spark = SparkSession.builder \
 
 SedonaRegistrator.registerAll(spark)
 
-# === Kafka topics and checkpoint ===
-kafka_bootstrap_servers = f"{EC2_EXTERNAL_IP}:9092"
-raw_topic = "raw_alerts"
-enriched_topic = "enriched_alerts"
-checkpoint_dir = "./checkpoints/alerts_stream_v3"
-
-# === Schema for incoming alerts ===
+# Schema for incoming alerts
 alert_schema = StructType() \
     .add("event_id", StringType()) \
     .add("event_time", TimestampType()) \
@@ -55,11 +55,11 @@ alert_schema = StructType() \
     .add("latitude", DoubleType()) \
     .add("longitude", DoubleType())
 
-# === Read alerts from Kafka ===
+# Consume alerts from raw_alerts Kafka topic
 alerts_df = spark.readStream \
     .format("kafka") \
-    .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
-    .option("subscribe", raw_topic) \
+    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
+    .option("subscribe", RAW_TOPIC) \
     .option("startingOffsets", "latest") \
     .load() \
     .selectExpr("CAST(value AS STRING) as json_value") \
@@ -67,11 +67,16 @@ alerts_df = spark.readStream \
     .select("data.*") \
     .withColumn("alert_point", expr("ST_Point(longitude, latitude)"))
 
-# === Batch processing function ===
+# MicroBatch processing
 def process_batch(batch_df, batch_id):
-    print(f"\n🚀 Processing batch {batch_id}")
+    print(f"\n=== Processing batch {batch_id} ===")
+    print("\n=== Alerts in this batch: ===")
     batch_df.show(truncate=False)
 
+    if batch_df.count() == 0:
+        print(f"=== Batch {batch_id} is empty — skipping write. ===")
+        return
+    
     try:
         users_df = spark.read \
             .format("mongo") \
@@ -80,28 +85,37 @@ def process_batch(batch_df, batch_id):
             .option("collection", "latest_user_location") \
             .load() \
             .withColumnRenamed("user_id", "nearby_user_id") \
-            .withColumn("user_point", expr("ST_Point(location.coordinates[1], location.coordinates[0])"))
+            .withColumn("user_point", expr("ST_Point(location.coordinates[0], location.coordinates[1])"))
+        
+        print("=== Active users: ===")
         users_df.show(truncate=False)
     except Exception as e:
-        print("❌ MongoDB read failed:", e)
+        print("MongoDB read failed:", e)
         return
 
     if users_df.count() == 0:
-        print("⚠️ No active users.")
+        print("=== No active users. ===")
         return
 
-    # === Spatial join and proximity filter ===
+    # Calculate distance between alert points and user locations
     joined_df = batch_df.crossJoin(broadcast(users_df)) \
-        .withColumn("distance_meters", expr("ST_DistanceSphere(alert_point, user_point)")) \
-        .filter(col("distance_meters") <= 500) \
+        .withColumn("distance_meters", expr("ST_DistanceSphere(alert_point, user_point)"))
+    
+    # Filter for users within 500 meters from the alert point and exclude self-matches
+    joined_df = joined_df.filter(col("distance_meters") <= 500) \
         .filter(col("user_id") != col("nearby_user_id"))
 
-    # === Group enriched alerts ===
+    # Group enriched alerts: enrich each alert with nearby users
     grouped_df = joined_df.groupBy("event_id", "event_time", "event_type", "user_id",
                                    "description", "latitude", "longitude") \
         .agg(collect_list("nearby_user_id").alias("nearby_users"))
 
-    # === Archive to S3 ===
+    # Check if there are any enriched alerts to write
+    if grouped_df.count() == 0:
+        print(f"=== Batch {batch_id} produced no enriched alerts — skipping write. ===")
+        return
+
+    # Archive to S3 with a partition by date
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     grouped_df = grouped_df.withColumn("date", lit(today))
 
@@ -111,23 +125,23 @@ def process_batch(batch_df, batch_id):
         .partitionBy("date") \
         .parquet(s3_path)
 
-    print(f"✅ Batch {batch_id} archived to {s3_path}")
+    print(f"=== Batch {batch_id} archived to {s3_path} ===")
 
-    # === Send to Kafka ===
+    # Send to Kafka enriched_alerts topic
     output_df = grouped_df.select(to_json(struct("*")).alias("value"))
     output_df.write \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
-        .option("topic", enriched_topic) \
+        .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
+        .option("topic", ENRICHED_TOPIC) \
         .save()
     
-    print(f"✅ Batch {batch_id} sent to Kafka topic '{enriched_topic}'")
+    print(f"=== Batch {batch_id} sent to Kafka topic '{ENRICHED_TOPIC}' ===")
 
-# === Start the stream ===
+# Start the streaming query with foreachBatch
 query = alerts_df.writeStream \
     .foreachBatch(process_batch) \
     .outputMode("append") \
-    .option("checkpointLocation", checkpoint_dir) \
+    .option("checkpointLocation", CHECKPOINT_DIR) \
     .start()
 
 query.awaitTermination()
