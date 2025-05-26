@@ -62,7 +62,7 @@ demo_alert = {
     "latitude": 32.069,
     "longitude": 34.794
 }
-producer.send(RAW_TOPIC, value=json.dumps(demo_alert).encode("utf-8"))
+producer.send(RAW_TOPIC, value=json.dumps(demo_alert))
 print("Demo alert sent.")
 
 # Producer loop
@@ -71,7 +71,7 @@ try:
         event = json.dumps(generate_event())
         print(f"Sending: {event}")
         producer.send(RAW_TOPIC, value=event)
-        time.sleep(20)
+        time.sleep(10)
 
 except Exception as e:
     print(f"Error occurred: {e}")
