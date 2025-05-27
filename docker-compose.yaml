@@ -1,0 +1,89 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    container_name: zookeeper
+    ports:
+    - 2181:2181
+    networks:
+    - alertcircle-net
+  mongo:
+    image: nayacollege/mongo:1.0
+    container_name: mongo
+    ports:
+    - 27017:27017
+    volumes:
+    - mongo_data:/data/db
+    networks:
+    - alertcircle-net
+  postgres:
+    image: postgres:12
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: airflow
+    ports:
+    - 5432:5432
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    networks:
+    - alertcircle-net
+  airflow-webserver:
+    image: apache/airflow:2.0.0
+    container_name: airflow_webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__CORE__LOGGING_LEVEL: INFO
+    volumes:
+    - ./dags:/opt/airflow/dags
+    - ./airflow-data/logs:/opt/airflow/logs
+    - ./airflow-data/plugins:/opt/airflow/plugins
+    depends_on:
+    - postgres
+    ports:
+    - 8082:8080
+    command: airflow webserver
+    restart: always
+    networks:
+    - alertcircle-net
+  airflow-scheduler:
+    image: apache/airflow:2.0.0
+    container_name: airflow_scheduler
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__CORE__LOGGING_LEVEL: INFO
+    volumes:
+    - ./dags:/opt/airflow/dags
+    - ./airflow-data/logs:/opt/airflow/logs
+    - ./airflow-data/plugins:/opt/airflow/plugins
+    depends_on:
+    - postgres
+    command: airflow scheduler
+    restart: always
+    networks:
+    - alertcircle-net
+  dev_env:
+    image: ofrir119/developer_env:spark340_ssh
+    container_name: dev_env
+    ports:
+    - '22022:22'
+    - 8888:8888
+    - 4040:4040
+    - 4041:4041
+    - 4042:4042
+    networks:
+    - alertcircle-net
+volumes:
+  mongo_data: null
+  postgres_data: null
+  kafka_data: null
+networks:
+  alertcircle-net:
+    driver: bridge
