@@ -128,6 +128,17 @@ streamlit run streamlit_app/streamlit_live_map_app.py
 
 ## 🧭 Hybrid Deployment Notes
 
+Due to local hardware limitations, this system uses a hybrid deployment model:
+
+- **EC2 instance** hosts:
+  - MongoDB
+  - Apache Airflow (scheduling DAG)
+  - Kafka & Zookeeper (via Docker Compose)
+- **Local machine** runs:
+  - Spark job for stream processing
+  - Kafka producers and consumers
+  - Streamlit live dashboard
+
 Due to performance limits on local hardware, this project runs with a hybrid model:
 
 - **EC2** runs MongoDB and Airflow
@@ -152,3 +163,50 @@ For feedback, questions or collaboration – feel free to reach out!
 ---
 
 🛡️ Built with ❤️ as a final project for the Cloud & Big Data Engineering course @ Naya College
+
+---
+
+## 🛠️ EC2 Deployment & Developer Notes
+
+### 🔁 Docker Compose Setup (on EC2)
+Kafka, Zookeeper, MongoDB, and Airflow are deployed via Docker Compose on the EC2 instance.
+
+Use the cleaned Docker Compose:
+```bash
+docker compose up -d
+```
+
+### 🌐 Airflow Access
+Airflow Web UI:  
+http://<your-ec2-public-ip>:8082/
+
+### 🔐 SSH & File Transfer Commands
+
+- **SSH into EC2**
+```bash
+ssh -i alertcircle-key.pem ec2-user@<EC2-IP>
+```
+
+- **Copy file from EC2 to local**
+```bash
+scp -i alertcircle-key.pem ec2-user@<EC2-IP>:~/alertcircle/docker-compose.yaml .
+```
+
+- **Copy file from local to EC2**
+```bash
+scp -i alertcircle-key.pem <local-file> ec2-user@<EC2-IP>:<remote-path>
+```
+
+- **Enter dev_env container**
+```bash
+docker exec -it dev_env bash
+```
+
+### 🔁 On Every EC2 Reboot
+Update Kafka’s public IP:
+```bash
+./update-kafka-ip.sh
+```
+
+---
+
