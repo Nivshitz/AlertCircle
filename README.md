@@ -1,5 +1,5 @@
 
-# 🚨 AlertCircle – Real-Time Community Alert System for Bylaw Enforcement Activity
+# 🚨 AlertCircle – Real-Time Community Alert System
 
 AlertCircle is a real-time, location-based alert system that allows users to report several sightings — such as officers issuing tickets — and instantly notify others nearby. Designed for community-driven awareness, it leverages Apache Kafka, Spark, MongoDB, Airflow, and AWS to deliver alerts, with live map, and a notification feed.
 
