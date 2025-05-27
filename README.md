@@ -83,12 +83,51 @@ AlertCircle/
 ---
 
 ## 🚀 Quickstart
+---
+
+## 🐳 Docker Deployment (for EC2)
+
+If you're deploying the backend infrastructure on an EC2 instance, you can use Docker Compose for setup.
+
+### 🔧 Prerequisites on EC2
+
+Make sure your EC2 has:
+- Docker installed
+- Docker Compose installed
+- The `docker-compose.yaml` file cloned in the project root
+
+### ▶️ 2. Start Services
+
+```bash
+cd alertcircle
+docker compose up -d
+```
+
+This will start:
+- Kafka & Zookeeper
+- MongoDB
+- Airflow (webserver + scheduler + PostgreSQL)
+- `dev_env` container for development
+
+---
+
+✅ After the containers are running:
+- Airflow UI will be accessible via `http://<your-ec2-public-ip>:8082`
+- MongoDB and Kafka will be available to local services (ensure security group allows connections)
+
+---
+
+### 🔧 MongoDB Setup
+
+Create the following collections:
+- alerts_live:
+  
 
 ### 🛠️ Requirements
 
 - Python 3.10+
-- Kafka + Zookeeper running locally
-- MongoDB running (locally or on EC2)
+- Kafka + Zookeeper running
+- MongoDB running
 - AWS credentials if writing to S3
 
 ### 📦 Install Dependencies
@@ -114,7 +153,7 @@ python spark/process_alerts_stream.py
 #### 3. Start the Enriched Alert Consumer
 
 ```bash
-python kafka/enriched_alerts_consumer.py
+python kafka/enriched_alerts_to_mongo.py
 ```
 
 #### 4. Launch the Streamlit Dashboard
@@ -131,7 +170,7 @@ streamlit run streamlit_app/streamlit_live_map_app.py
 
 Due to local hardware limitations, this system uses a hybrid deployment model:
 
-- **EC2 instance** hosts (via Docker Compose):
+- **EC2 instance** hosts:
   - MongoDB
   - Apache Airflow (scheduling DAG)
   - Kafka & Zookeeper
@@ -140,19 +179,14 @@ Due to local hardware limitations, this system uses a hybrid deployment model:
   - Kafka producers and consumers
   - Streamlit live dashboard
 
-Due to performance limits on local hardware, this project runs with a hybrid model:
-
-- **EC2** runs MongoDB, Kafka, and Airflow
-- **Local machine** runs Spark, producers/consumers, and Streamlit
-
 ---
 
 ## 📈 Future Enhancements
 
-- [ ] Docker Compose / Kubernetes setup
-- [ ] Mobile app or PWA for live alerts
+- [ ] Setting up the full project on EC2 with Docker
+- [ ] Developing a mobile app for live alerts
 - [ ] User authentication & notification preferences
-- [ ] Historical data analytics with AWS Athena
+- [ ] Historical data analytics with AWS Athena/ETL to a DWH -> BI Tool for dashboards
 
 ---
 
@@ -163,51 +197,7 @@ For feedback, questions or collaboration – feel free to reach out!
 
 ---
 
-🛡️ Built with ❤️ as a final project for the Cloud & Big Data Engineering course @ Naya College
-
----
-
-## 🛠️ EC2 Deployment & Developer Notes
-
-### 🔁 Docker Compose Setup (on EC2)
-Kafka, Zookeeper, MongoDB, and Airflow are deployed via Docker Compose on the EC2 instance.
-
-Use the cleaned Docker Compose:
-```bash
-docker compose up -d
-```
-
-### 🌐 Airflow Access
-Airflow Web UI:  
-http://<your-ec2-public-ip>:8082/
-
-### 🔐 SSH & File Transfer Commands
-
-- **SSH into EC2**
-```bash
-ssh -i alertcircle-key.pem ec2-user@<EC2-IP>
-```
-
-- **Copy file from EC2 to local**
-```bash
-scp -i alertcircle-key.pem ec2-user@<EC2-IP>:~/alertcircle/docker-compose.yaml .
-```
-
-- **Copy file from local to EC2**
-```bash
-scp -i alertcircle-key.pem <local-file> ec2-user@<EC2-IP>:<remote-path>
-```
-
-- **Enter dev_env container**
-```bash
-docker exec -it dev_env bash
-```
-
-### 🔁 On Every EC2 Reboot
-Update Kafka’s public IP:
-```bash
-./update-kafka-ip.sh
-```
+🛡️ Built as a final project for the Cloud & Big Data Engineering course @ Naya College
 
 ---
 
