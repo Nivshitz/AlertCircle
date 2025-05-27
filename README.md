@@ -1,7 +1,8 @@
 
-# 🚨 AlertCircle - Real-Time Bylaw Violation Alert System
+# 🚨 AlertCircle – Real-Time Community Alert System for Bylaw Enforcement Activity
 
-AlertCircle is a real-time alerting system that notifies nearby users when bylaw officers are spotted. It simulates user activity, processes geo-tagged alerts, enriches them with user proximity data, and visualizes everything in a live map and notification feed.
+AlertCircle is a real-time, location-based alert system that allows users to report several sightings — such as officers issuing tickets — and instantly notify others nearby. Designed for community-driven awareness, it leverages Apache Kafka, Spark, MongoDB, Airflow, and AWS to deliver alerts, with live map, and a notification feed.
+
 
 ![Architecture](./docs/AlertCircle_FinalVersion.jpg)
 
@@ -23,7 +24,7 @@ AlertCircle is a real-time alerting system that notifies nearby users when bylaw
 ```
 AlertCircle/
 │
-├── airflow/                  # Airflow DAGs (runs on EC2)
+├── airflow/                  # Airflow DAGs
     └── update_user_locations.py
 │   └── dags/
 │       └── update_user_locations_dag.py
@@ -89,7 +90,7 @@ AlertCircle/
 
 If you're deploying the backend infrastructure on an EC2 instance, you can use Docker Compose for setup.
 
-### 🔧 Prerequisites on EC2
+### 🔧 1. Prerequisites on EC2
 
 Make sure your EC2 has:
 - Docker installed
@@ -117,11 +118,36 @@ This will start:
 
 ---
 
-### 🔧 MongoDB Setup
+---
 
-Create the following collections:
-- alerts_live:
-  
+## 🍃 MongoDB Setup (Indexes & TTL)
+
+MongoDB collections and indexes must be created before the system can function properly.
+
+### 🛠️ Initialization Script
+
+A Mongo shell script is provided to create:
+
+- The `AlertCircleProject` database
+- Two collections: `alerts_live` and `latest_user_location`
+- All required indexes:
+  - TTL indexes for automatic cleanup
+  - 2dsphere geospatial indexes
+  - Optional compound indexes for performance
+
+### 📄 Script File
+
+The script is called `init_alertcircle_db.js` and is located in the root of this repository.
+
+### ▶️ How to Run
+
+From inside your EC2 or Mongo shell:
+
+```bash
+mongo < init_alertcircle_db.js
+```
+
+---
 
 ### 🛠️ Requirements
 
@@ -183,11 +209,12 @@ Due to local hardware limitations, this system uses a hybrid deployment model:
 
 ## 📈 Future Enhancements
 
-- [ ] Setting up the full project on EC2 with Docker
-- [ ] Developing a mobile app for live alerts
+- [ ] Developing a mobile app based on this project as a backend
+- [ ] Setting up fully on EC2 with Docker
+- [ ] Expanding alerts options to additional types such as parking inspector
 - [ ] User authentication & notification preferences
 - [ ] Historical data analytics with AWS Athena/ETL to a DWH -> BI Tool for dashboards
-
+- [ ] Adding tests, error handling, logs, failure plans
 ---
 
 ## 📬 Contact
