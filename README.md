@@ -24,12 +24,13 @@ AlertCircle is a real-time alerting system that notifies nearby users when bylaw
 AlertCircle/
 │
 ├── airflow/                  # Airflow DAGs (runs on EC2)
+    └── update_user_locations.py
 │   └── dags/
 │       └── update_user_locations_dag.py
 │
 ├── kafka/                    # Kafka producers and consumers
 │   └── user_report_simulator.py
-│   └── enriched_alerts_consumer.py
+│   └── enriched_alerts_to_mongo.py
 │
 ├── spark/                    # Spark structured streaming job
 │   └── process_alerts_stream.py
@@ -37,8 +38,8 @@ AlertCircle/
 ├── streamlit_app/            # Streamlit real-time dashboard
 │   └── streamlit_live_map_app.py
 │
-├── requirements.txt          # Python dependencies
-├── README.md                 # Project documentation
+├── requirements.txt          
+├── README.md                 
 └── .gitignore
 ```
 
@@ -48,16 +49,16 @@ AlertCircle/
 
 ### 🧍 User Alert Simulation (Producer)
 
-- Simulated user sends alerts every **10 seconds**
+- Simulated users send alerts every **10 seconds**
 - Published to Kafka topic: `raw_alerts`
 
 ### 🔥 Spark Enrichment (Stream Processor)
 
 - Consumes `raw_alerts`
-- Enriches alerts with user proximity data from MongoDB
+- Enriches alerts with nearby users from MongoDB within 500 meters from the alert point
 - Publishes to:
   - Kafka topic: `enriched_alerts`
-  - S3 bucket: `enriched-alerts-bucket`
+  - S3 bucket: `enriched-alerts`
 
 ### 🌐 Airflow DAG (on EC2)
 
@@ -74,8 +75,8 @@ AlertCircle/
 
 - Connects to `alerts_live` MongoDB collection
 - Shows:
-  - Real-time **alert map**
-  - Live **notification feed**
+  - Real-time **alert map** for visualize
+  - Live **notification feed** for users notifications simulation
 
 ![Dashboard](./docs/streamlit_dashboard.png)
 
@@ -130,10 +131,10 @@ streamlit run streamlit_app/streamlit_live_map_app.py
 
 Due to local hardware limitations, this system uses a hybrid deployment model:
 
-- **EC2 instance** hosts:
+- **EC2 instance** hosts (via Docker Compose):
   - MongoDB
   - Apache Airflow (scheduling DAG)
-  - Kafka & Zookeeper (via Docker Compose)
+  - Kafka & Zookeeper
 - **Local machine** runs:
   - Spark job for stream processing
   - Kafka producers and consumers
@@ -141,8 +142,8 @@ Due to local hardware limitations, this system uses a hybrid deployment model:
 
 Due to performance limits on local hardware, this project runs with a hybrid model:
 
-- **EC2** runs MongoDB and Airflow
-- **Local machine** runs Kafka, Spark, producers/consumers, and Streamlit
+- **EC2** runs MongoDB, Kafka, and Airflow
+- **Local machine** runs Spark, producers/consumers, and Streamlit
 
 ---
 
